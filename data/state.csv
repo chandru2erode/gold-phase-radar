@@ -1,0 +1,20 @@
+field,value
+month,2026-11
+zone,sip
+zone_label,Accumulate (normal SIP)
+action,"Keep the normal gold SIP. No extra cash, no pause."
+frenzy,False
+data_month,2026-10
+flow_cr,3474.03
+flow_percentile,46
+signal_trend_pct,-7.0
+nav,110.4125
+nav_date,2026-11-16
+sma10_now,121.2
+trend_now_pct,-8.9
+month_end_line,122.4
+next_flow_month,2026-11
+hold_if_flow_below_cr,317
+add_if_flow_above_cr,12056
+frenzy_if_flow_above_cr,26984
+updated_at,2026-11-17T04:54+05:30

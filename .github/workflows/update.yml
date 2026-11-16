@@ -7,6 +7,11 @@ on:
 
 permissions:
   contents: write
+  issues: write
+
+concurrency:
+  group: update-gold-data
+  cancel-in-progress: false
 
 jobs:
   update:
@@ -16,11 +21,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests==2.32.3 pandas==2.2.3 xlrd==2.0.1 openpyxl==3.1.5
-      - run: python scripts/update.py
+      - run: pip install requests==2.32.3 pandas==2.2.3 numpy==2.1.3 xlrd==2.0.1 openpyxl==3.1.5
+      - name: Refresh data
+        id: refresh
+        run: python scripts/update.py
       - name: Commit if data changed
+        if: always()
         run: |
           git config user.name "gold-radar-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data
           if git diff --cached --quiet; then echo "No change"; else git commit -m "Data update $(date -u +%F)" && git push; fi
+      - name: Open an issue for a zone change or new AMFI data
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f alert.md ]; then
+            title="$(head -n 1 alert.md)"
+            tail -n +2 alert.md > body.md
+            gh issue create --repo "${{ github.repository }}" --title "$title" --body-file body.md
+          fi

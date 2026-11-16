@@ -3,48 +3,30 @@
  "rows": [
   {
    "strategy": "Plain SIP",
-   "final_value": 5580466,
+   "final_value_lakh": 55.8,
    "xirr_pct": 14.0,
    "max_drawdown_pct": -26.6,
    "avg_cash_pct": 0.0,
-   "settings_beating_sip": "not tested",
-   "final_value_lakh": 55.8
+   "first_half": 1.62,
+   "second_half": 19.48
   },
   {
-   "strategy": "Dashboard zones (add / normal / hold / trim)",
-   "final_value": 5789788,
+   "strategy": "Zones (Accumulate more / Accumulate / Hold)",
+   "final_value_lakh": 57.0,
+   "xirr_pct": 14.25,
+   "max_drawdown_pct": -18.7,
+   "avg_cash_pct": 6.8,
+   "first_half": 2.6,
+   "second_half": 19.46
+  },
+  {
+   "strategy": "Zones + trim 25% on a frenzy warning",
+   "final_value_lakh": 57.9,
    "xirr_pct": 14.43,
    "max_drawdown_pct": -18.7,
    "avg_cash_pct": 7.6,
-   "settings_beating_sip": "not tested",
-   "final_value_lakh": 57.9
-  },
-  {
-   "strategy": "Contrarian: buy quiet, pause and trim when crowded",
-   "final_value": 3435269,
-   "xirr_pct": 8.25,
-   "max_drawdown_pct": -26.6,
-   "avg_cash_pct": 33.7,
-   "settings_beating_sip": "0 of 108",
-   "final_value_lakh": 34.4
-  },
-  {
-   "strategy": "Contrarian, pause only",
-   "final_value": 5454257,
-   "xirr_pct": 13.73,
-   "max_drawdown_pct": -26.6,
-   "avg_cash_pct": 3.7,
-   "settings_beating_sip": "0 of 108",
-   "final_value_lakh": 54.5
-  },
-  {
-   "strategy": "Flow-momentum (pause at 20th pct, no trend check)",
-   "final_value": 5848828,
-   "xirr_pct": 14.55,
-   "max_drawdown_pct": -18.6,
-   "avg_cash_pct": 18.2,
-   "settings_beating_sip": "108 of 108",
-   "final_value_lakh": 58.5
+   "first_half": 2.6,
+   "second_half": 20.03
   }
  ]
 }
