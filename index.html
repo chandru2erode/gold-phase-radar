@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gold Phase Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap">
+<style>
+/* Layout: single column of tiles, one combined chart, then evidence. Gold-leaf accent on warm graphite neutrals. */
+:root{
+  --bg:#f7f6f2; --panel:#ffffff; --fg:#1d1c19; --muted:#6b675e; --line:#e3dfd5;
+  --accent:#a8781c; --ok:#2f8a4e; --warn:#c98a0b; --bad:#c2412d; --grid:#ece8de;
+  --serif:"Fraunces",Georgia,serif; --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#151411; --panel:#1e1d19; --fg:#ece9e1; --muted:#a19b8e; --line:#34312a;
+  --accent:#d8a64a; --ok:#4fb873; --warn:#e0a73a; --bad:#e2664f; --grid:#2a2823; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans)}
+.wrap{max-width:1180px;margin:0 auto;padding:28px max(16px,env(safe-area-inset-right)) 48px max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:22px}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(28px,4vw,40px);margin:0;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:600;margin:0;text-wrap:balance}
+.lede{margin:6px 0 0;max-width:72ch;font-size:16px}
+.muted{color:var(--muted);font-size:13px;line-height:1.5}
+.stamp{font-size:12px;color:var(--muted);letter-spacing:.02em}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.tile,.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.tile{display:flex;flex-direction:column;gap:4px}
+.k{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.v{font-family:var(--serif);font-size:30px;line-height:1.15;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:10px}
+.v i{width:14px;height:14px;border-radius:3px;flex:none}
+.s{font-size:13px;color:var(--muted)}
+.card{display:flex;flex-direction:column;gap:12px}
+.head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+select{font:inherit;font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:10px;border-radius:2px;display:inline-block}
+.chartbox{position:relative;min-height:440px}
+.chartbox svg{display:block;width:100%}
+.axis text{fill:var(--muted);font:11.5px var(--sans)}
+.axis path,.axis line{stroke:var(--line)}
+.tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);box-shadow:0 6px 24px rgba(0,0,0,.14);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.5;font-variant-numeric:tabular-nums;min-width:180px;z-index:5}
+.tip b{font-weight:600}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.rule{display:flex;gap:10px;align-items:flex-start}
+.rule i{width:14px;height:14px;border-radius:3px;flex:none;margin-top:4px}
+.rule p{margin:0;font-size:13px;color:var(--muted)}
+.rule strong{display:block;color:var(--fg);font-size:14.5px;font-weight:600}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:180px}
+th{color:var(--muted);font-weight:500}
+tr.hl td{font-weight:600}
+details summary{cursor:pointer;font-weight:600}
+details li{font-size:13px;color:var(--muted);max-width:85ch}
+.err{color:var(--bad)}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Gold Phase Radar</h1>
+    <p class="lede" id="takeaway">Loading the latest data…</p>
+    <p class="stamp" id="stamp"></p>
+  </header>
+
+  <section class="tiles">
+    <div class="tile"><span class="k">Zone this month</span><span class="v" id="t-phase">—</span><span class="s" id="t-phase-s"></span></div>
+    <div class="tile"><span class="k">Flow percentile, 0 to 100</span><span class="v" id="t-pct">—</span><span class="s" id="t-pct-s"></span></div>
+    <div class="tile"><span class="k">Price vs 10-month average</span><span class="v" id="t-trend">—</span><span class="s" id="t-trend-s"></span></div>
+    <div class="tile"><span class="k">What changes the zone next</span><span class="s" id="t-next">—</span></div>
+  </section>
+
+  <section class="card">
+    <div class="head">
+      <h2>Price, trend and crowd flows, with zones</h2>
+      <select id="range" aria-label="Time range">
+        <option value="2012-01">Since 2012</option>
+        <option value="2009-02">Since 2009</option>
+        <option value="5">Last 5 years</option>
+        <option value="2">Last 2 years</option>
+      </select>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--ok);opacity:.6"></i>Accumulate more: add parked cash</span>
+      <span><i style="background:var(--ok);opacity:.25"></i>Accumulate: normal SIP</span>
+      <span><i style="background:var(--warn);opacity:.55"></i>Hold: pause new money</span>
+      <span><i style="background:var(--bad);opacity:.75"></i>Trim: sell 25%</span>
+      <span><i style="background:var(--fg);height:2px"></i>Gold BeES NAV (log scale)</span>
+      <span><i style="border-top:2px dashed var(--muted);height:0"></i>10-month average</span>
+    </div>
+    <div class="chartbox" id="chart"></div>
+    <p class="muted">Lower panel: the last 3 months of Gold ETF net inflows as a share of AUM, ranked against the previous 3 years (0 = quietest, 100 = most crowded). Dashed lines mark the 30th and 60th percentiles. Point at the chart to read any month.</p>
+  </section>
+
+  <section class="card">
+    <h2>How each zone is decided</h2>
+    <div class="rules">
+      <div class="rule"><i style="background:var(--bad)"></i><p><strong>Trim</strong>A single month's inflow above 15% of Gold ETF AUM, a crowd frenzy. Sell 25%. Weak evidence: it fired only twice since 2012 (Feb 2020, Jan 2026). Checked first.</p></div>
+      <div class="rule"><i style="background:var(--warn)"></i><p><strong>Hold</strong>Flow percentile at 30 or below <em>and</em> Gold BeES below its 10-month average. Park the gold SIP in a liquid fund until either turns.</p></div>
+      <div class="rule"><i style="background:var(--ok)"></i><p><strong>Accumulate more</strong>Flow percentile at 60 or above. Keep the SIP and invest half of any cash parked during Hold.</p></div>
+      <div class="rule"><i style="background:var(--ok);opacity:.4"></i><p><strong>Accumulate</strong>Everything else. Keep the normal SIP.</p></div>
+    </div>
+    <p class="muted">Each month's zone uses the previous month's data, because AMFI publishes flows around the 10th of the next month. Heavy inflows mean "accumulate", not "trim": from 2011 to 2026 gold did better after crowded months than after quiet ones.</p>
+  </section>
+
+  <section class="two">
+    <div class="card">
+      <h2>Next-12-month return by how crowded flows were</h2>
+      <div id="buckets" style="min-height:230px"></div>
+      <p class="muted">Average Gold BeES return over the 12 months after the signal month, starting one month later. Recomputed from the data on every load.</p>
+    </div>
+    <div class="card">
+      <h2>Backtest: ₹10,000 a month, Jan 2012 to Nov 2026</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Strategy</th><th>Final value (₹ lakh)</th><th>Return a year</th><th>Worst fall</th><th>Avg in cash</th><th>Settings beating SIP</th></tr></thead>
+        <tbody id="bt"></tbody>
+      </table></div>
+      <p class="muted">₹17.9 lakh invested in total. Signals acted on one month late, 0.1% cost per trade, parked cash at 6% a year. Most of the edge came from sitting out the 2012–2018 outflow bear market. Run once on 16 Nov 2026; not updated daily.</p>
+    </div>
+  </section>
+
+  <details>
+    <summary>Data, method and limits</summary>
+    <ul>
+      <li>Flows and AUM: AMFI monthly reports, Gold ETF row, from Feb 2009. June 2014 was derived from AMFI's fiscal-year-to-date totals.</li>
+      <li>Price: Gold BeES NAV from AMFI (via mfapi.in), chained across the scheme's three AMFI codes and its 2019 unit split. The current month shows the latest daily NAV.</li>
+      <li>Flow percentile: 3-month net inflow divided by AUM three months earlier, ranked within the trailing 36 months (needs 24 months of history).</li>
+      <li>A GitHub Action refreshes the data every weekday evening. About 17 years of flow data cover roughly one and a half sentiment cycles, so treat the zones as a tested guide, not a guarantee. Not investment advice.</li>
+    </ul>
+  </details>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const Z = {
+  add:{label:'Accumulate more', c:'var(--ok)', op:.30},
+  sip:{label:'Accumulate (normal SIP)', c:'var(--ok)', op:.10},
+  hold:{label:'Hold (pause new money)', c:'var(--warn)', op:.30},
+  trim:{label:'Trim 25%', c:'var(--bad)', op:.45},
+  none:{label:'No signal yet', c:'none', op:0}
+};
+const fmtCr = v => '₹' + d3.format(',.0f')(v) + ' cr';
+const mLabel = m => d3.utcFormat('%b %Y')(new Date(m + '-01T00:00:00Z'));
+const dLabel = s => d3.utcFormat('%-d %b %Y')(new Date(s + 'T00:00:00Z'));
+const $ = id => document.getElementById(id);
+
+function phases(raw){
+  const r = raw.map(x => ({month:x.month, nav:+x.nav, flow:x.flow_cr===''?null:+x.flow_cr, aum:x.aum_cr===''?null:+x.aum_cr}));
+  const fi3 = r.map((x,i) => (i>=3 && x.flow!==null && r[i-1].flow!==null && r[i-2].flow!==null && r[i-3].aum) ? (x.flow+r[i-1].flow+r[i-2].flow)/r[i-3].aum : null);
+  const out = r.map((x,i) => {
+    const win = fi3.slice(Math.max(0,i-35), i+1).filter(v => v!==null);
+    let pct = null;
+    if (fi3[i]!==null && win.length>=24) pct = (win.filter(v => v<fi3[i]).length + 0.5*win.filter(v => v===fi3[i]).length)/win.length;
+    const sma = i>=9 ? d3.mean(r.slice(i-9,i+1), d => d.nav) : null;
+    const fi1 = (i>=1 && x.flow!==null && r[i-1].aum) ? x.flow/r[i-1].aum : null;
+    return {month:x.month, nav:x.nav, sma10:sma, flow_cr:x.flow, aum_cr:x.aum, f3:fi3[i], f1:fi1, pct, trend: sma ? x.nav/sma-1 : null};
+  });
+  out.forEach((x,i) => {
+    const p = out[i-1]; let z = 'none';
+    if (p && p.pct!==null){
+      if (p.f1!==null && p.f1>0.15) z='trim';
+      else if (p.pct<=0.30 && p.trend!==null && p.trend<0) z='hold';
+      else if (p.pct>=0.60) z='add';
+      else z='sip';
+    }
+    x.phase = z;
+  });
+  return out;
+}
+function nowState(ph){
+  const n = ph.length, cur = ph[n-1];
+  let k = n-1; while (k>=0 && ph[k].flow_cr===null) k--;
+  const last = ph[k];
+  const win = ph.slice(Math.max(0,k-34), k+1).map(d => d.f3).filter(v => v!==null).sort(d3.ascending);
+  const base = ph[k].flow_cr + ph[k-1].flow_cr, aum3 = ph[k-2].aum_cr;
+  // If the newest flow month is already the month before the current one, the next AMFI release is the current month's
+  const nextM = ph[k+1] ? ph[k+1].month : null;
+  return {cur, last, nextM,
+    hold: d3.quantile(win,.30)*aum3 - base, add: d3.quantile(win,.60)*aum3 - base, trim: .15*last.aum_cr};
+}
+function buckets(ph){
+  const E = [[0,.2,'0–20 quiet'],[.2,.4,'20–40'],[.4,.6,'40–60'],[.6,.8,'60–80'],[.8,1.0001,'80–100 crowded']];
+  return E.map(([a,b,label]) => {
+    const v = [];
+    ph.forEach((x,i) => { if (x.pct===null || x.month<'2009-06') return; const s=ph[i+1], e=ph[i+13];
+      if (s && e && (x.pct>a || (a===0 && x.pct===0)) && x.pct<=b) v.push(e.nav/s.nav-1); });
+    return {label, r:d3.mean(v), n:v.length};
+  });
+}
+
+function drawTiles(st, meta){
+  const {cur, last, nextM} = st, z = Z[cur.phase];
+  $('takeaway').textContent = `For ${mLabel(cur.month)} the zone is ${z.label.charAt(0).toLowerCase()+z.label.slice(1)}. ${mLabel(last.month)} Gold ETF inflows of ${fmtCr(last.flow_cr)} sit at the ${Math.round(last.pct*100)}th percentile of the last three years, and Gold BeES is ${Math.abs(cur.trend*100).toFixed(1)}% ${cur.trend<0?'below':'above'} its 10-month average.`;
+  $('stamp').textContent = `NAV as of ${dLabel(meta.nav_date)} · flows to ${mLabel(meta.last_flow_month)} · data refreshed ${meta.updated_at.replace('T',' ').slice(0,16)} IST`;
+  const pv = $('t-phase'); pv.replaceChildren(); const i = document.createElement('i'); i.style.background = z.c; i.style.opacity = Math.min(1, z.op*2.6); pv.append(i, document.createTextNode(z.label));
+  $('t-phase-s').textContent = ({sip:'Keep the normal gold SIP. No extra cash, no pause.', add:'Keep the SIP and add half of any parked gold cash.', hold:'Pause new gold money; park it in a liquid fund.', trim:'Sell 25% of gold units; keep the SIP.', none:'Not enough history yet.'})[cur.phase] + ` Based on ${mLabel(last.month)} data.`;
+  $('t-pct').textContent = Math.round(last.pct*100);
+  $('t-pct-s').textContent = `${mLabel(last.month)} net inflow ${fmtCr(last.flow_cr)}. ` + (last.pct<=.3 ? 'Quiet: at or below the 30th percentile.' : last.pct>=.6 ? 'Crowded: at or above the 60th percentile.' : 'Neutral: between the 30th and 60th percentiles.');
+  $('t-trend').textContent = (cur.trend>0?'+':'') + (cur.trend*100).toFixed(1) + '%';
+  $('t-trend-s').textContent = `NAV ₹${cur.nav.toFixed(2)} (${dLabel(meta.nav_date)}) vs 10-month average ₹${cur.sma10.toFixed(2)}. ` + (cur.trend<0 ? "Downtrend: Hold's price condition is met." : 'Uptrend: Hold is off whatever the flows.');
+  const hold = st.hold<=0 ? `a net outflow of more than ${fmtCr(-st.hold)}` : `an inflow below about ${fmtCr(st.hold)}`;
+  $('t-next').textContent = nextM ? `When AMFI publishes ${mLabel(nextM)} flows (around the 10th of the following month): Hold if they show ${hold} and that month closes below its 10-month average. Accumulate more above about ${fmtCr(st.add)}. Trim above ${fmtCr(st.trim)}. Anything else keeps the normal SIP.` : 'Waiting for the next month to begin.';
+}
+
+let PH = null;
+function drawChart(){
+  const el = $('chart'); el.replaceChildren(); if (!PH) return;
+  const rv = $('range').value, lastM = PH[PH.length-1].month;
+  const start = (rv==='5'||rv==='2') ? (+lastM.slice(0,4) - +rv) + lastM.slice(4) : rv;
+  const rows = PH.filter(x => x.month>=start);
+  const parse = m => new Date(m + '-01T00:00:00Z'), mid = r => d3.utcDay.offset(parse(r.month), 14);
+  const W = Math.max(320, el.clientWidth), narrow = W<560;
+  const H = narrow?420:470, m = {t:10,r:14,b:26,l:44}, gap = 26;
+  const H1 = Math.round((H-m.t-m.b-gap)*.68), H2 = (H-m.t-m.b-gap)-H1, y2top = m.t+H1+gap;
+  const x = d3.scaleUtc().domain([parse(rows[0].month), d3.utcMonth.offset(parse(lastM),1)]).range([m.l, W-m.r]);
+  const navs = rows.flatMap(r => [r.nav, r.sma10]).filter(Boolean);
+  const y = d3.scaleLog().domain([d3.min(navs)*.95, d3.max(navs)*1.05]).range([m.t+H1, m.t]);
+  const y2 = d3.scaleLinear().domain([0,100]).range([y2top+H2, y2top]);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role','img')
+    .attr('aria-label','Gold BeES price on a log scale with its 10-month average, and Gold ETF flow percentile below, over background bands showing the zone each month.');
+  rows.forEach(r => { if (r.phase==='none') return; const z = Z[r.phase], x0 = x(parse(r.month)), x1 = x(d3.utcMonth.offset(parse(r.month),1));
+    [[m.t,H1],[y2top,H2]].forEach(([yy,hh]) => svg.append('rect').attr('x',x0).attr('y',yy).attr('width',Math.max(0,x1-x0+1)).attr('height',hh).style('fill',z.c).style('fill-opacity',z.op)); });
+  const ticks = y.ticks(5).filter((v,i,a) => a.length<7 || i%2===0);
+  svg.append('g').selectAll('line').data(ticks).join('line').attr('x1',m.l).attr('x2',W-m.r).attr('y1',y).attr('y2',y).style('stroke','var(--grid)');
+  svg.append('g').attr('class','axis').attr('transform',`translate(${m.l},0)`).call(d3.axisLeft(y).tickValues(ticks).tickFormat(v => '₹'+d3.format('~s')(v)).tickSize(0)).call(g => g.select('.domain').remove());
+  svg.append('path').datum(rows.filter(r => r.sma10)).attr('d', d3.line().x(r => x(mid(r))).y(r => y(r.sma10))).style('fill','none').style('stroke','var(--muted)').style('stroke-width',1.5).style('stroke-dasharray','4 3');
+  svg.append('path').datum(rows).attr('d', d3.line().x(r => x(mid(r))).y(r => y(r.nav))).style('fill','none').style('stroke','var(--fg)').style('stroke-width',2);
+  svg.append('g').selectAll('path').data(rows.filter(r => r.phase==='trim')).join('path').attr('d', d3.symbol(d3.symbolTriangle,70)).attr('transform', r => `translate(${x(mid(r))},${y(r.nav)-12}) rotate(180)`).style('fill','var(--bad)');
+  const lr = rows[rows.length-1];
+  svg.append('circle').attr('cx',x(mid(lr))).attr('cy',y(lr.nav)).attr('r',3.5).style('fill','var(--accent)');
+  svg.append('g').attr('class','axis').attr('transform',`translate(${m.l},0)`).call(d3.axisLeft(y2).tickValues([0,30,60,100]).tickSize(0)).call(g => g.select('.domain').remove());
+  [30,60].forEach(v => svg.append('line').attr('x1',m.l).attr('x2',W-m.r).attr('y1',y2(v)).attr('y2',y2(v)).style('stroke','var(--muted)').style('stroke-opacity',.6).style('stroke-dasharray','3 3'));
+  const pr = rows.filter(r => r.pct!==null);
+  svg.append('path').datum(pr).attr('d', d3.area().x(r => x(mid(r))).y0(y2(0)).y1(r => y2(r.pct*100))).style('fill','var(--accent)').style('fill-opacity',.18);
+  svg.append('path').datum(pr).attr('d', d3.line().x(r => x(mid(r))).y(r => y2(r.pct*100))).style('fill','none').style('stroke','var(--accent)').style('stroke-width',1.6);
+  svg.append('text').attr('x',m.l+4).attr('y',y2top-6).text('Flow percentile').style('fill','var(--muted)').style('font-size','11.5px');
+  const span = (x.domain()[1]-x.domain()[0])/(365.25*864e5);
+  const xt = span>8 ? d3.utcYear.every(narrow?3:2) : span>3 ? d3.utcYear.every(1) : d3.utcMonth.every(narrow?6:3);
+  svg.append('g').attr('class','axis').attr('transform',`translate(0,${y2top+H2})`).call(d3.axisBottom(x).ticks(xt).tickFormat(span>3 ? d3.utcFormat('%Y') : d3.utcFormat('%b %y')).tickSize(3));
+  const tip = document.createElement('div'); tip.className='tip'; tip.hidden=true; el.append(tip);
+  const cross = svg.append('line').attr('y1',m.t).attr('y2',y2top+H2).style('stroke','var(--muted)').style('display','none');
+  const bis = d3.bisector(r => parse(r.month)).right;
+  const show = ev => {
+    const [px] = d3.pointer(ev, svg.node()); const sx = px * (W / svg.node().getBoundingClientRect().width);
+    const r = rows[Math.max(0, Math.min(rows.length-1, bis(rows, x.invert(sx))-1))];
+    cross.style('display',null).attr('x1',x(mid(r))).attr('x2',x(mid(r)));
+    tip.replaceChildren();
+    const add = (k,v) => { const p=document.createElement('div'), b=document.createElement('b'); b.textContent=k+': '; p.append(b, document.createTextNode(v)); tip.append(p); };
+    const h = document.createElement('div'); h.style.fontWeight='600'; h.textContent = mLabel(r.month) + (r===PH[PH.length-1] ? ' (latest NAV)' : ''); tip.append(h);
+    add('Zone', Z[r.phase].label); add('NAV', '₹'+r.nav.toFixed(2));
+    if (r.sma10) add('10-mo avg', '₹'+r.sma10.toFixed(2)+' ('+d3.format('+.1%')(r.trend)+')');
+    if (r.flow_cr!==null) add('Net flow', fmtCr(r.flow_cr)+' ('+d3.format('.1%')(r.f1||0)+' of AUM)');
+    if (r.pct!==null) add('Flow percentile', Math.round(r.pct*100));
+    tip.hidden = false;
+    const bw = el.clientWidth, tw = tip.offsetWidth, left = x(mid(r))/W*bw;
+    tip.style.left = (left+12+tw>bw ? left-tw-12 : left+12)+'px'; tip.style.top='8px';
+  };
+  svg.append('rect').attr('x',m.l).attr('y',m.t).attr('width',W-m.l-m.r).attr('height',y2top+H2-m.t).style('fill','transparent')
+    .on('pointermove',show).on('pointerdown',show).on('pointerleave',() => { tip.hidden=true; cross.style('display','none'); });
+}
+function drawBuckets(b){
+  const el = $('buckets'); el.replaceChildren();
+  const W = Math.max(300, el.clientWidth), H = 230, m = {t:22,r:8,b:40,l:8};
+  const x = d3.scaleBand().domain(b.map(r => r.label)).range([m.l, W-m.r]).padding(.28);
+  const y = d3.scaleLinear().domain([Math.min(0,d3.min(b,r => r.r)), d3.max(b,r => r.r)*1.12]).range([H-m.b, m.t]);
+  const svg = d3.select(el).append('svg').attr('viewBox',`0 0 ${W} ${H}`).attr('width','100%').attr('role','img').attr('aria-label','Average next-12-month Gold BeES return by flow-percentile bucket.');
+  svg.append('line').attr('x1',m.l).attr('x2',W-m.r).attr('y1',y(0)).attr('y2',y(0)).style('stroke','var(--line)');
+  svg.selectAll('rect').data(b).join('rect').attr('x',r => x(r.label)).attr('width',x.bandwidth()).attr('y',r => y(Math.max(0,r.r))).attr('height',r => Math.abs(y(r.r)-y(0))).attr('rx',2).style('fill','var(--accent)');
+  svg.selectAll('text.v').data(b).join('text').attr('class','v').attr('x',r => x(r.label)+x.bandwidth()/2).attr('y',r => y(Math.max(0,r.r))-6).attr('text-anchor','middle').text(r => d3.format('.1%')(r.r)).style('fill','var(--fg)').style('font-size','12px');
+  svg.selectAll('text.l').data(b).join('text').attr('class','l').attr('x',r => x(r.label)+x.bandwidth()/2).attr('y',H-m.b+16).attr('text-anchor','middle').style('fill','var(--muted)').style('font-size','11.5px')
+    .each(function(r){ const p = r.label.split(' '), t = d3.select(this); t.append('tspan').text(p[0]); if (p[1]) t.append('tspan').attr('x',x(r.label)+x.bandwidth()/2).attr('dy','1.2em').text(p[1]); });
+}
+function drawBacktest(bt){
+  const tb = $('bt'); tb.replaceChildren();
+  bt.rows.forEach(r => { const tr = document.createElement('tr'); if (/Dashboard zones|Plain SIP/.test(r.strategy)) tr.className='hl';
+    [r.strategy, r.final_value_lakh.toFixed(1), r.xirr_pct.toFixed(2)+'%', r.max_drawdown_pct.toFixed(1)+'%', r.avg_cash_pct.toFixed(1)+'%', r.settings_beating_sip]
+      .forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.append(td); }); tb.append(tr); });
+}
+
+const bust = '?t=' + Date.now();
+Promise.all([d3.csv('data/gold_flows.csv'+bust), d3.json('data/meta.json'+bust), d3.json('data/backtest.json'+bust)])
+  .then(([raw, meta, bt]) => {
+    PH = phases(raw);
+    drawTiles(nowState(PH), meta); drawChart(); drawBuckets(buckets(PH)); drawBacktest(bt);
+    $('range').addEventListener('change', drawChart);
+    let w = window.innerWidth; window.addEventListener('resize', () => { if (Math.abs(window.innerWidth-w) > 40){ w = window.innerWidth; drawChart(); drawBuckets(buckets(PH)); } });
+  })
+  .catch(e => { $('takeaway').textContent = 'Could not load the data files: ' + e.message; $('takeaway').className = 'lede err'; });
+</script>
+</body>
+</html>
