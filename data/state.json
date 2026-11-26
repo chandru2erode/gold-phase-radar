@@ -8,14 +8,14 @@
  "flow_cr": 3474.03,
  "flow_percentile": 46,
  "signal_trend_pct": -7.0,
- "nav": 102.689,
- "nav_date": "2026-11-23",
- "sma10_now": 120.43,
- "trend_now_pct": -14.7,
+ "nav": 99.8063,
+ "nav_date": "2026-11-25",
+ "sma10_now": 120.14,
+ "trend_now_pct": -16.9,
  "month_end_line": 122.4,
  "next_flow_month": "2026-11",
  "hold_if_flow_below_cr": 317,
  "add_if_flow_above_cr": 12056,
  "frenzy_if_flow_above_cr": 26984,
- "updated_at": "2026-11-26T04:11+05:30"
+ "updated_at": "2026-11-27T04:02+05:30"
 }
